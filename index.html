@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Varshni 1976 — Quasar Redshift Shells</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #ddd; font-family: ui-sans-serif, system-ui, sans-serif; }
+  canvas { display: block; }
+
+  .panel {
+    position: absolute;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid #2a2a2a;
+    backdrop-filter: blur(6px);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  #info  { top: 10px; left: 10px; max-width: 380px; }
+  #ctrls { top: 10px; right: 10px; min-width: 200px; }
+  #legend { bottom: 10px; left: 10px; font-size: 12px; }
+  #info h1 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.5px; }
+  #info p  { margin: 4px 0; }
+  #ctrls label { display: block; margin: 6px 0; }
+  #ctrls input[type=range] { width: 110px; vertical-align: middle; }
+  #ctrls .val { display: inline-block; width: 32px; text-align: right; color: #9bf; }
+
+  #tooltip {
+    position: absolute;
+    pointer-events: none;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #555;
+    font-size: 12px;
+    display: none;
+    white-space: nowrap;
+  }
+  .ref { color: #888; font-size: 11px; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="info" class="panel">
+  <h1>Varshni 1976 — Quasar Redshift Shells</h1>
+  <p>Each translucent sphere is one of the 57 redshift groups from Table I of
+  Varshni's paper. Under the cosmological interpretation of redshift, members
+  of a group sit at the same distance from Earth and therefore on a spherical
+  shell centered on Earth.</p>
+  <p>Earth is the small blue marker at the origin. Shell radius is proportional
+  to redshift z. Colored points are individual quasars; same color = same group.</p>
+  <p>Drag to orbit · scroll to zoom · right-drag to pan · hover a quasar for its name.</p>
+  <p class="ref">Source: Y. P. Varshni, Astrophys. Space Sci. 43, 3–8 (1976).</p>
+</div>
+
+<div id="ctrls" class="panel">
+  <label><input type="checkbox" id="showShells" checked> shells</label>
+  <label><input type="checkbox" id="showLines" checked> radial lines</label>
+  <label><input type="checkbox" id="showLabels"> group labels</label>
+  <label><input type="checkbox" id="autoRotate"> auto-rotate</label>
+  <label>shell opacity <input type="range" id="opacity" min="0" max="60" value="12"> <span class="val" id="opVal">0.12</span></label>
+  <label>point size <input type="range" id="pointSize" min="5" max="40" value="15"> <span class="val" id="psVal">1.5</span></label>
+</div>
+
+<div id="legend" class="panel">radius = z × 200 · 57 shells · 384 quasars in dataset (200+ in groups)</div>
+<div id="tooltip"></div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
