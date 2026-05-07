@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Move the Observer — do the shells survive?</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #ddd; font-family: ui-sans-serif, system-ui, sans-serif; }
+  canvas { display: block; }
+  .panel { position: absolute; padding: 10px 14px; background: rgba(0,0,0,0.65); border: 1px solid #2a2a2a; backdrop-filter: blur(6px); font-size: 13px; line-height: 1.45; }
+  #info  { top: 10px; left: 10px; max-width: 380px; }
+  #ctrls { top: 10px; right: 10px; min-width: 240px; }
+  #stats { bottom: 10px; left: 10px; min-width: 280px; font-size: 13px; }
+  #info h1 { margin: 0 0 6px; font-size: 14px; letter-spacing: .5px; }
+  #info p, #stats p { margin: 4px 0; }
+  #ctrls label { display: block; margin: 6px 0; }
+  #ctrls input[type=range] { width: 130px; vertical-align: middle; }
+  #ctrls .v { display: inline-block; width: 44px; text-align: right; color: #9bf; }
+  .preset { display: inline-block; margin: 4px 4px 0 0; padding: 4px 8px; background: #222; border: 1px solid #444; cursor: pointer; font-size: 12px; }
+  .preset:hover { background: #333; }
+  .nav { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 12px; }
+  .nav a { color: #9bf; margin: 0 6px; text-decoration: none; }
+  .nav a.active { color: #fff; border-bottom: 1px solid #fff; }
+  #fitBar { width: 200px; height: 8px; background: #222; border: 1px solid #444; display: inline-block; vertical-align: middle; margin-left: 6px; }
+  #fitFill { height: 100%; background: linear-gradient(90deg, #f44, #fa0, #4f4); width: 100%; }
+  .ref { color: #888; font-size: 11px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<nav class="nav panel">
+  <a href="index.html">overview</a>
+  <a href="shells.html">earth shells</a>
+  <a href="observer.html" class="active">move observer</a>
+  <a href="clustering.html">clustering</a>
+  <a href="lattice.html">lattice</a>
+</nav>
+
+<div id="info" class="panel">
+  <h1>Test: do the shells survive a change of observer?</h1>
+  <p>Quasar positions are fixed in space. The yellow marker is the observer. For each group, we draw a sphere around the observer at radius = mean distance from observer to that group's members. Each quasar is recolored by how far it sits from its group's would-be shell.</p>
+  <p>At Earth (origin), shells fit perfectly (everything green). Move the observer with the sliders and the shells stop fitting — exactly what Varshni claimed.</p>
+  <p class="ref">Varshni 1976, possibility (3): "These shells would disappear if viewed from another galaxy or a quasar."</p>
+</div>
+
+<div id="ctrls" class="panel">
+  <label>X <input type="range" id="ox" min="-500" max="500" value="0" step="1"> <span class="v" id="oxv">0</span></label>
+  <label>Y <input type="range" id="oy" min="-500" max="500" value="0" step="1"> <span class="v" id="oyv">0</span></label>
+  <label>Z <input type="range" id="oz" min="-500" max="500" value="0" step="1"> <span class="v" id="ozv">0</span></label>
+  <div>
+    <span class="preset" data-pos="0,0,0">Earth</span>
+    <span class="preset" data-pos="100,0,0">+100 x</span>
+    <span class="preset" data-pos="300,0,0">+300 x</span>
+    <span class="preset" data-pos="0,300,0">+300 y</span>
+    <span class="preset" data-pos="random">random</span>
+  </div>
+  <hr style="border-color:#333;margin:10px 0;">
+  <label><input type="checkbox" id="showObsShells" checked> observer's would-be shells</label>
+  <label><input type="checkbox" id="showEarthShells"> original Earth shells</label>
+  <label><input type="checkbox" id="autoRotate"> orbit camera</label>
+</div>
+
+<div id="stats" class="panel">
+  <p><b>Observer:</b> <span id="opos">(0, 0, 0)</span></p>
+  <p><b>Mean σ/μ across 57 groups:</b> <span id="sigma">0.000</span></p>
+  <p><b>Shell-fit score:</b> <span id="fit">1.00</span><span id="fitBar"><span id="fitFill"></span></span></p>
+  <p class="ref">σ/μ = std-dev of distances to group members ÷ mean distance. 0 = perfect shell, large = no shell. Score = max(0, 1 - σ/μ).</p>
+</div>
+
+<script type="module" src="./observer.js"></script>
+</body>
+</html>

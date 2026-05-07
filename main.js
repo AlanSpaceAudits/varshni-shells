@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { groups } from './data.js';
+import { parseCoords, toCartesian, groupColor, Z_TO_R } from './coords.js';
 
-const Z_TO_R = 200;     // world units per unit redshift
 const POINT_R = 1.5;    // base radius for quasar markers
 
 // ---------- scene ---------------------------------------------------------
@@ -68,51 +68,6 @@ controls.autoRotateSpeed = 0.4;
   const lbl = new CSS2DObject(div);
   lbl.position.set(0, 6, 0);
   scene.add(lbl);
-}
-
-// ---------- coordinate parsing -------------------------------------------
-// Many quasar designations encode B1950 coordinates as HHMM±DDMM or HHMM±DDD
-// (DD.D tenths). For names without coords we use a deterministic hash so
-// every reload places the same fallback point in the same spot.
-function parseCoords(name) {
-  const m = name.match(/(\d{4})([+-])(\d{2,4})/);
-  if (m) {
-    const ra_h = parseInt(m[1].slice(0, 2), 10);
-    const ra_m = parseInt(m[1].slice(2, 4), 10);
-    if (ra_h <= 24 && ra_m < 60) {
-      const ra_deg = (ra_h + ra_m / 60) * 15;
-      const sign = m[2] === '-' ? -1 : 1;
-      const d = m[3];
-      let dec_deg;
-      if (d.length === 2) dec_deg = sign * parseInt(d, 10);
-      else if (d.length === 3) dec_deg = sign * parseInt(d, 10) / 10;
-      else dec_deg = sign * (parseInt(d.slice(0, 2), 10) + parseInt(d.slice(2, 4), 10) / 60);
-      if (Math.abs(dec_deg) <= 90) {
-        return { ra: ra_deg * Math.PI / 180, dec: dec_deg * Math.PI / 180, parsed: true };
-      }
-    }
-  }
-  // FNV-1a hash for stable pseudo-random fallback
-  let h = 2166136261;
-  for (let i = 0; i < name.length; i++) {
-    h ^= name.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const r1 = ((h >>> 0) % 100000) / 100000;
-  const r2 = (((h >>> 13) >>> 0) % 100000) / 100000;
-  return { ra: r1 * 2 * Math.PI, dec: Math.asin(2 * r2 - 1), parsed: false };
-}
-
-function toCartesian(r, ra, dec) {
-  const x = r * Math.cos(dec) * Math.cos(ra);
-  const y = r * Math.sin(dec);
-  const z = r * Math.cos(dec) * Math.sin(ra);
-  return new THREE.Vector3(x, y, z);
-}
-
-function groupColor(i) {
-  const hue = (i * 137.508) % 360;
-  return new THREE.Color(`hsl(${hue}, 80%, 62%)`);
 }
 
 // ---------- build shells, points, lines ----------------------------------

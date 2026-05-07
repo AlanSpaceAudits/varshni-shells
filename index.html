@@ -2,76 +2,93 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Varshni 1976 — Quasar Redshift Shells</title>
+<title>Varshni 1976 — Quasar Redshift Shells (demos)</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #ddd; font-family: ui-sans-serif, system-ui, sans-serif; }
-  canvas { display: block; }
+  html, body { margin: 0; min-height: 100%; background: #000; color: #ddd; font-family: ui-sans-serif, system-ui, sans-serif; }
+  body { padding: 40px 24px 80px; max-width: 980px; margin: 0 auto; line-height: 1.55; }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: .3px; }
+  h2 { font-size: 18px; margin: 36px 0 8px; color: #cfe; }
+  p { margin: 8px 0; }
+  .lede { color: #aab; font-size: 15px; }
+  .ref { color: #888; font-size: 12px; }
+  a { color: #9bf; }
 
-  .panel {
-    position: absolute;
-    padding: 12px 14px;
-    background: rgba(0, 0, 0, 0.65);
-    border: 1px solid #2a2a2a;
-    backdrop-filter: blur(6px);
-    font-size: 13px;
-    line-height: 1.45;
-  }
-  #info  { top: 10px; left: 10px; max-width: 380px; }
-  #ctrls { top: 10px; right: 10px; min-width: 200px; }
-  #legend { bottom: 10px; left: 10px; font-size: 12px; }
-  #info h1 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.5px; }
-  #info p  { margin: 4px 0; }
-  #ctrls label { display: block; margin: 6px 0; }
-  #ctrls input[type=range] { width: 110px; vertical-align: middle; }
-  #ctrls .val { display: inline-block; width: 32px; text-align: right; color: #9bf; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }
+  .card { display: block; padding: 16px 18px; background: #111; border: 1px solid #2a2a2a; text-decoration: none; color: inherit; transition: border-color .15s, background .15s; }
+  .card:hover { border-color: #5af; background: #181822; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; color: #fff; }
+  .card .desc { font-size: 13px; color: #aab; }
+  .card .tag { display: inline-block; margin-top: 8px; padding: 2px 8px; background: #223; color: #9cf; font-size: 11px; }
 
-  #tooltip {
-    position: absolute;
-    pointer-events: none;
-    padding: 6px 10px;
-    background: rgba(0, 0, 0, 0.9);
-    border: 1px solid #555;
-    font-size: 12px;
-    display: none;
-    white-space: nowrap;
-  }
-  .ref { color: #888; font-size: 11px; }
+  blockquote { margin: 12px 0; padding: 8px 14px; border-left: 3px solid #5af; background: #0a0a14; color: #cdd; font-size: 13px; }
+  code { background: #1a1a22; padding: 1px 4px; }
+  hr { border: 0; border-top: 1px solid #222; margin: 36px 0; }
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
 </head>
 <body>
 
-<div id="info" class="panel">
-  <h1>Varshni 1976 — Quasar Redshift Shells</h1>
-  <p>Each translucent sphere is one of the 57 redshift groups from Table I of
-  Varshni's paper. Under the cosmological interpretation of redshift, members
-  of a group sit at the same distance from Earth and therefore on a spherical
-  shell centered on Earth.</p>
-  <p>Earth is the small blue marker at the origin. Shell radius is proportional
-  to redshift z. Colored points are individual quasars; same color = same group.</p>
-  <p>Drag to orbit · scroll to zoom · right-drag to pan · hover a quasar for its name.</p>
-  <p class="ref">Source: Y. P. Varshni, Astrophys. Space Sci. 43, 3–8 (1976).</p>
+<h1>Varshni 1976 — Quasar Redshift Shells</h1>
+<p class="lede">Visual demos accompanying Y. P. Varshni's paper
+<i>"The Red Shift Hypothesis for Quasars: Is the Earth the Center of the Universe?"</i>,
+Astrophysics and Space Science 43 (1976) 3–8.</p>
+
+<p>Varshni grouped 384 quasars into 57 sets whose emission-line redshifts agreed
+to within ±0.001. Under the cosmological interpretation of redshift, each
+group's members share a common distance from Earth and therefore lie on a
+spherical shell centred on Earth. The combined chance probability for all
+57 coincidences was ≈ 3 × 10⁻⁹⁹.</p>
+
+<p>Varshni considered three geometric explanations for the shells, and argued
+the first two were not supported by the data:</p>
+
+<blockquote>
+(1) coincidence in distances by clustering — ruled out by direction data;<br>
+(2) a crystal-lattice arrangement with Earth at a node — ruled out by absence of regular angular pattern;<br>
+(3) Earth is the centre of the universe — accepted as the only remaining possibility under the cosmological interpretation.
+</blockquote>
+
+<p>The demos let you inspect each possibility yourself.</p>
+
+<div class="grid">
+  <a class="card" href="shells.html">
+    <h3>Earth-centred shells</h3>
+    <div class="desc">3D visualisation of all 57 shells. Earth at origin, radius proportional to redshift, members coloured by group.</div>
+    <span class="tag">basic view</span>
+  </a>
+  <a class="card" href="observer.html">
+    <h3>Move the observer</h3>
+    <div class="desc">Quasar positions are fixed in space; drag the observer marker around. Shells are recomputed from the new viewpoint and a fit-quality score is shown live. Tests Varshni's claim that the shells "would disappear if viewed from another galaxy".</div>
+    <span class="tag">possibility (3)</span>
+  </a>
+  <a class="card" href="clustering.html">
+    <h3>Sky clustering</h3>
+    <div class="desc">RA/Dec map of every group member. If shells were due to local clustering, group members would huddle on the sky. Pairwise great-circle separations are listed.</div>
+    <span class="tag">possibility (1)</span>
+  </a>
+  <a class="card" href="lattice.html">
+    <h3>Crystal lattice</h3>
+    <div class="desc">A cubic lattice with Earth at a node forces equal-distance points into a small set of fixed angular directions (4, 6, 8, 12, 24-fold patterns). Compare the lattice prediction with an actual Varshni group.</div>
+    <span class="tag">possibility (2)</span>
+  </a>
 </div>
 
-<div id="ctrls" class="panel">
-  <label><input type="checkbox" id="showShells" checked> shells</label>
-  <label><input type="checkbox" id="showLines" checked> radial lines</label>
-  <label><input type="checkbox" id="showLabels"> group labels</label>
-  <label><input type="checkbox" id="autoRotate"> auto-rotate</label>
-  <label>shell opacity <input type="range" id="opacity" min="0" max="60" value="12"> <span class="val" id="opVal">0.12</span></label>
-  <label>point size <input type="range" id="pointSize" min="5" max="40" value="15"> <span class="val" id="psVal">1.5</span></label>
-</div>
+<h2>Geometric note on the move-observer test</h2>
+<p>Each quasar has a fixed 3D position in the demo (computed from its catalog
+RA/Dec and redshift-distance). The set of distances from Earth to one
+group's members is uniform by construction (that is the whole point of the
+shell). When the observer translates by a vector <b>O</b>, the new distance
+to each quasar becomes √((P − O)·(P − O)), which depends on direction.
+A spread of distances — not a single value — emerges. The fit score
+quantifies that spread; it sits at 1.00 at Earth and falls toward 0
+elsewhere.</p>
 
-<div id="legend" class="panel">radius = z × 200 · 57 shells · 384 quasars in dataset (200+ in groups)</div>
-<div id="tooltip"></div>
+<p>This is purely Euclidean geometry. The same conclusion holds in flat-FRW
+comoving coordinates if the quasar redshifts are real cosmological distances.</p>
 
-<script type="module" src="./main.js"></script>
+<hr>
+<p class="ref">Source PDF: Varshni, Astrophys. Space Sci. 43 (1976) 3–8 ·
+<a href="https://github.com/AlanSpaceAudits/varshni-shells">repo</a> ·
+data: 152 quasars in 57 groups, transcribed from Table I.</p>
+
 </body>
 </html>

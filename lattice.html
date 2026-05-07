@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Crystal lattice — possibility (2)</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #ddd; font-family: ui-sans-serif, system-ui, sans-serif; }
+  canvas { display: block; }
+  .panel { position: absolute; padding: 10px 14px; background: rgba(0,0,0,0.65); border: 1px solid #2a2a2a; backdrop-filter: blur(6px); font-size: 13px; line-height: 1.45; }
+  #info  { top: 50px; left: 10px; max-width: 380px; }
+  #ctrls { top: 50px; right: 10px; min-width: 240px; }
+  #stats { bottom: 10px; left: 10px; min-width: 320px; font-size: 12px; }
+  #info h1 { margin: 0 0 6px; font-size: 14px; letter-spacing: .5px; }
+  #info p, #stats p { margin: 4px 0; }
+  #ctrls label { display: block; margin: 6px 0; }
+  .nav { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 12px; }
+  .nav a { color: #9bf; margin: 0 6px; text-decoration: none; }
+  .nav a.active { color: #fff; border-bottom: 1px solid #fff; }
+  .ref { color: #888; font-size: 11px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<nav class="nav panel">
+  <a href="index.html">overview</a>
+  <a href="shells.html">earth shells</a>
+  <a href="observer.html">move observer</a>
+  <a href="clustering.html">clustering</a>
+  <a href="lattice.html" class="active">lattice</a>
+</nav>
+
+<div id="info" class="panel">
+  <h1>Test: do quasars form a lattice with Earth at a site?</h1>
+  <p>If quasars sat on a cubic lattice and Earth occupied one of its nodes, every "shell" would consist of points at fixed integer distances <i>r²&nbsp;=&nbsp;a²+b²+c²</i>. Such shells contain a <b>highly regular polyhedral pattern</b> of directions (4, 6, 8, 12, 24 points at fixed angles), not a scatter.</p>
+  <p>Below: the lattice prediction (left toggle) versus the actual angular spread of Varshni's group members (right toggle). Switch between them and rotate to compare regularity.</p>
+  <p class="ref">Varshni 1976, possibility (2): "...one would expect some pattern or regularity in the directions of quasars belonging to a certain group. No such evidence is found."</p>
+</div>
+
+<div id="ctrls" class="panel">
+  <label>view
+    <select id="mode">
+      <option value="lattice">lattice prediction</option>
+      <option value="real">actual group</option>
+      <option value="both">overlay both</option>
+    </select>
+  </label>
+  <label>lattice r² <input type="range" id="r2" min="1" max="50" value="14"> <span id="r2v">14</span></label>
+  <label>compare with group <input type="number" id="grp" min="1" max="57" value="23" style="width:60px"></label>
+  <label><input type="checkbox" id="autoRotate" checked> orbit</label>
+</div>
+
+<div id="stats" class="panel">
+  <p><b id="stTitle">Lattice shell r² = 14</b></p>
+  <p id="stBody"></p>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { groups } from './data.js';
+import { quasars, groupColor } from './coords.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000004);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 5000);
+camera.position.set(15, 12, 28);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.5;
+
+// origin marker (Earth)
+{
+  const o = new THREE.Mesh(new THREE.SphereGeometry(0.25, 20, 20), new THREE.MeshBasicMaterial({ color: 0x4aa3ff }));
+  scene.add(o);
+}
+
+// 3 axes
+{
+  const ax = new THREE.AxesHelper(6);
+  ax.material.transparent = true; ax.material.opacity = 0.25;
+  scene.add(ax);
+}
+
+// Lattice: integer points within radius R, dimmed; highlight those at chosen r²
+const LATTICE_R = 6;
+const latticePoints = [];
+for (let x = -LATTICE_R; x <= LATTICE_R; x++)
+  for (let y = -LATTICE_R; y <= LATTICE_R; y++)
+    for (let z = -LATTICE_R; z <= LATTICE_R; z++) {
+      if (x === 0 && y === 0 && z === 0) continue;
+      latticePoints.push([x, y, z]);
+    }
+
+const latticeRoot = new THREE.Group();
+const latticeShell = new THREE.Group();
+const latticeRays = new THREE.Group();
+scene.add(latticeRoot, latticeShell, latticeRays);
+
+const dim = new THREE.MeshBasicMaterial({ color: 0x223344 });
+for (const [x, y, z] of latticePoints) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 8), dim);
+  m.position.set(x, y, z);
+  m.userData.r2 = x*x + y*y + z*z;
+  latticeRoot.add(m);
+}
+
+function rebuildLatticeShell(r2) {
+  while (latticeShell.children.length) latticeShell.remove(latticeShell.children[0]);
+  while (latticeRays.children.length)  latticeRays.remove(latticeRays.children[0]);
+  const matched = latticePoints.filter(([x,y,z]) => x*x + y*y + z*z === r2);
+  const r = Math.sqrt(r2);
+  // shell sphere
+  latticeShell.add(new THREE.Mesh(
+    new THREE.SphereGeometry(r, 36, 24),
+    new THREE.MeshBasicMaterial({ color: 0x66ccff, wireframe: true, transparent: true, opacity: 0.18 })
+  ));
+  for (const [x,y,z] of matched) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), new THREE.MeshBasicMaterial({ color: 0x66ccff }));
+    m.position.set(x,y,z);
+    latticeShell.add(m);
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(x,y,z)]);
+    latticeRays.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.55 })));
+  }
+  return matched;
+}
+
+// Real-group display: directions of group members on a unit sphere of same display radius.
+const realRoot = new THREE.Group();
+const realRays = new THREE.Group();
+scene.add(realRoot, realRays);
+
+function rebuildReal(groupIdx, displayRadius) {
+  while (realRoot.children.length) realRoot.remove(realRoot.children[0]);
+  while (realRays.children.length) realRays.remove(realRays.children[0]);
+  const members = quasars.filter(q => q.groupIndex === groupIdx);
+  realRoot.add(new THREE.Mesh(
+    new THREE.SphereGeometry(displayRadius, 36, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffaa55, wireframe: true, transparent: true, opacity: 0.18 })
+  ));
+  const col = groupColor(groupIdx);
+  for (const q of members) {
+    const dir = q.position.clone().normalize().multiplyScalar(displayRadius);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffaa55 }));
+    m.position.copy(dir);
+    realRoot.add(m);
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), dir]);
+    realRays.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffaa55, transparent: true, opacity: q.parsed ? 0.6 : 0.25 })));
+  }
+  return members;
+}
+
+function angBetween(a, b) {
+  const cos = a.dot(b) / (a.length() * b.length());
+  return Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI;
+}
+
+function pairwiseAngles(vecs) {
+  const out = [];
+  for (let i = 0; i < vecs.length; i++)
+    for (let j = i + 1; j < vecs.length; j++)
+      out.push(angBetween(vecs[i], vecs[j]));
+  return out.sort((a, b) => a - b);
+}
+
+function update() {
+  const mode = document.getElementById('mode').value;
+  const r2 = parseInt(document.getElementById('r2').value, 10);
+  const gIdx = parseInt(document.getElementById('grp').value, 10) - 1;
+  const r = Math.sqrt(r2);
+  document.getElementById('r2v').textContent = r2;
+
+  const matched = rebuildLatticeShell(r2);
+  const members = rebuildReal(gIdx, r);
+
+  latticeRoot.visible = mode === 'lattice' || mode === 'both';
+  latticeShell.visible = mode === 'lattice' || mode === 'both';
+  latticeRays.visible  = mode === 'lattice' || mode === 'both';
+  realRoot.visible = mode === 'real' || mode === 'both';
+  realRays.visible = mode === 'real' || mode === 'both';
+
+  // angle stats
+  const latticeVecs = matched.map(([x,y,z]) => new THREE.Vector3(x,y,z));
+  const realVecs    = members.map(q => q.position.clone());
+  const aLat  = pairwiseAngles(latticeVecs);
+  const aReal = pairwiseAngles(realVecs);
+
+  const fmt = arr => arr.length ? `min=${arr[0].toFixed(0)}°, median=${arr[Math.floor(arr.length/2)].toFixed(0)}°, max=${arr[arr.length-1].toFixed(0)}°, n_pairs=${arr.length}` : '—';
+  const distinct = arr => new Set(arr.map(x => x.toFixed(1))).size;
+
+  document.getElementById('stTitle').textContent =
+    mode === 'real'    ? `Group ${gIdx+1} (${members.length} members)`
+  : mode === 'both'    ? `Lattice r²=${r2} (${matched.length} pts) vs group ${gIdx+1} (${members.length} members)`
+  :                      `Lattice shell r²=${r2} → ${matched.length} points`;
+
+  document.getElementById('stBody').innerHTML =
+    `<b>lattice angles:</b> ${fmt(aLat)} · distinct values ≈ <b>${distinct(aLat)}</b><br>` +
+    `<b>group angles:</b> ${fmt(aReal)} · distinct values ≈ <b>${distinct(aReal)}</b>` +
+    (matched.length === 0 ? '<br><span style="color:#f88">no lattice points exist at this r² (e.g. r²=7,15,23 are forbidden by Legendre\'s 3-square theorem)</span>' : '');
+}
+
+['mode','r2','grp'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update);
+  document.getElementById(id).addEventListener('change', update);
+});
+document.getElementById('autoRotate').addEventListener('change', e => controls.autoRotate = e.target.checked);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+update();
+function tick() { requestAnimationFrame(tick); controls.update(); renderer.render(scene, camera); }
+tick();
+</script>
+</body>
+</html>

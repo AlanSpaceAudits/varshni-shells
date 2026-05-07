@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sky clustering — possibility (1)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font-family: ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
+  .panel { position: absolute; padding: 10px 14px; background: rgba(0,0,0,0.65); border: 1px solid #2a2a2a; backdrop-filter: blur(6px); font-size: 13px; line-height: 1.45; }
+  #info  { top: 50px; left: 10px; max-width: 380px; }
+  #ctrls { top: 50px; right: 10px; min-width: 220px; }
+  #stats { bottom: 10px; left: 10px; min-width: 360px; font-size: 12px; }
+  #info h1 { margin: 0 0 6px; font-size: 14px; letter-spacing: .5px; }
+  #info p, #stats p { margin: 4px 0; }
+  #ctrls label { display: block; margin: 6px 0; }
+  .nav { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 12px; }
+  .nav a { color: #9bf; margin: 0 6px; text-decoration: none; }
+  .nav a.active { color: #fff; border-bottom: 1px solid #fff; }
+  canvas { display: block; }
+  .ref { color: #888; font-size: 11px; }
+  table { border-collapse: collapse; font-size: 11px; }
+  td { padding: 1px 8px; }
+</style>
+</head>
+<body>
+<nav class="nav panel">
+  <a href="index.html">overview</a>
+  <a href="shells.html">earth shells</a>
+  <a href="observer.html">move observer</a>
+  <a href="clustering.html" class="active">clustering</a>
+  <a href="lattice.html">lattice</a>
+</nav>
+
+<div id="info" class="panel">
+  <h1>Test: are group members clustered on the sky?</h1>
+  <p>If the redshift coincidences came from local clustering, members of the same group would lie near each other in the sky. The plot below puts every quasar at its catalog RA/Dec; lines connect members of the same group.</p>
+  <p>Solid dots = position parsed from name (e.g. <code>PKS 0119-04</code>). Hollow dots = catalog-only name (<code>3C 191</code>, <code>PHL 938</code>); their angular position is unknown to this dataset and shown at a hashed location for completeness.</p>
+  <p class="ref">Varshni 1976, possibility (1): "An examination of the coordinates ... shows that in most cases there is no such correlation." Only the solid-dot subset can be inspected here.</p>
+</div>
+
+<div id="ctrls" class="panel">
+  <label><input type="checkbox" id="showLines" checked> connect group members</label>
+  <label><input type="checkbox" id="showHashed"> include hashed positions</label>
+  <label><input type="checkbox" id="showGrid" checked> RA / Dec grid</label>
+  <label>highlight group <input type="number" id="hl" min="0" max="57" value="0" style="width:50px"></label>
+</div>
+
+<div id="stats" class="panel">
+  <p><b>Median pairwise great-circle separation per group (parsed members only)</b></p>
+  <div id="statTable"></div>
+</div>
+
+<canvas id="sky"></canvas>
+
+<script type="module">
+import { groups } from './data.js';
+import { quasars, groupColor } from './coords.js';
+
+const cvs = document.getElementById('sky');
+const ctx = cvs.getContext('2d');
+function fit() {
+  cvs.width = innerWidth;
+  cvs.height = innerHeight;
+}
+fit();
+addEventListener('resize', () => { fit(); draw(); });
+
+// equirectangular: x = RA in [0, 2π], y = Dec in [-π/2, π/2]
+function project(ra, dec) {
+  const padX = 60, padY = 60;
+  const w = cvs.width - 2*padX;
+  const h = cvs.height - 2*padY;
+  return {
+    x: padX + (ra / (2 * Math.PI)) * w,
+    y: padY + (1 - (dec + Math.PI/2) / Math.PI) * h,
+  };
+}
+
+function angSep(a, b) {
+  const cosD = Math.sin(a.dec)*Math.sin(b.dec) + Math.cos(a.dec)*Math.cos(b.dec)*Math.cos(a.ra - b.ra);
+  return Math.acos(Math.max(-1, Math.min(1, cosD))) * 180 / Math.PI;
+}
+
+const showLines = () => document.getElementById('showLines').checked;
+const showHashed = () => document.getElementById('showHashed').checked;
+const showGrid = () => document.getElementById('showGrid').checked;
+const hlGroup = () => parseInt(document.getElementById('hl').value, 10);
+
+function draw() {
+  ctx.fillStyle = '#000004';
+  ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+  if (showGrid()) {
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1;
+    for (let h = 0; h <= 24; h += 2) {
+      const x = project(h * Math.PI / 12, 0).x;
+      ctx.beginPath(); ctx.moveTo(x, 60); ctx.lineTo(x, cvs.height - 60); ctx.stroke();
+      ctx.fillStyle = '#555'; ctx.font = '11px sans-serif';
+      ctx.fillText(h + 'h', x - 8, cvs.height - 44);
+    }
+    for (let d = -90; d <= 90; d += 30) {
+      const y = project(0, d * Math.PI / 180).y;
+      ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(cvs.width - 60, y); ctx.stroke();
+      ctx.fillStyle = '#555';
+      ctx.fillText((d > 0 ? '+' : '') + d + '°', 30, y + 4);
+    }
+  }
+
+  // group lines
+  if (showLines()) {
+    groups.forEach((g, i) => {
+      const col = '#' + groupColor(i).getHexString();
+      const members = quasars.filter(q => q.groupIndex === i && (showHashed() || q.parsed));
+      if (members.length < 2) return;
+      ctx.strokeStyle = col + '66';
+      ctx.lineWidth = (i === hlGroup() - 1) ? 2 : 1;
+      for (let a = 0; a < members.length; a++) {
+        for (let b = a + 1; b < members.length; b++) {
+          const A = project(members[a].ra, members[a].dec);
+          const B = project(members[b].ra, members[b].dec);
+          ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+        }
+      }
+    });
+  }
+
+  // points
+  for (const q of quasars) {
+    if (!q.parsed && !showHashed()) continue;
+    const p = project(q.ra, q.dec);
+    const col = '#' + groupColor(q.groupIndex).getHexString();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+    if (q.parsed) {
+      ctx.fillStyle = col;
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    if (q.groupIndex === hlGroup() - 1) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  // labels
+  ctx.fillStyle = '#888'; ctx.font = '12px sans-serif';
+  ctx.fillText('RA →', cvs.width - 80, cvs.height - 20);
+  ctx.save();
+  ctx.translate(20, 80); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Dec ↑', 0, 0);
+  ctx.restore();
+}
+draw();
+
+// stats: median pairwise separation per group (parsed only)
+const stats = groups.map((g, i) => {
+  const ms = quasars.filter(q => q.groupIndex === i && q.parsed);
+  if (ms.length < 2) return { id: g.id, n: ms.length, median: null };
+  const seps = [];
+  for (let a = 0; a < ms.length; a++)
+    for (let b = a + 1; b < ms.length; b++)
+      seps.push(angSep(ms[a], ms[b]));
+  seps.sort((a, b) => a - b);
+  const median = seps[Math.floor(seps.length / 2)];
+  return { id: g.id, n: ms.length, median };
+}).filter(s => s.median != null).sort((a, b) => a.median - b.median);
+
+// Display: top 10 most clustered, top 10 most scattered, plus aggregate
+const topClose = stats.slice(0, 8);
+const topFar   = stats.slice(-8).reverse();
+const allMedians = stats.map(s => s.median);
+const overallMedian = allMedians.length
+  ? allMedians.slice().sort((a,b)=>a-b)[Math.floor(allMedians.length/2)]
+  : NaN;
+
+let html = '<table><tr><th>tightest</th><th>°</th><th>scatter</th><th>°</th></tr>';
+for (let i = 0; i < Math.max(topClose.length, topFar.length); i++) {
+  const c = topClose[i], f = topFar[i];
+  html += `<tr><td>g${c?.id ?? ''}</td><td>${c ? c.median.toFixed(0) : ''}</td><td>g${f?.id ?? ''}</td><td>${f ? f.median.toFixed(0) : ''}</td></tr>`;
+}
+html += `</table><p>median across ${stats.length} groups with ≥2 parsed members: <b>${overallMedian.toFixed(0)}°</b> (random isotropic ≈ 90°)</p>`;
+document.getElementById('statTable').innerHTML = html;
+
+['showLines','showHashed','showGrid','hl'].forEach(id => {
+  document.getElementById(id).addEventListener('input', draw);
+  document.getElementById(id).addEventListener('change', draw);
+});
+</script>
+</body>
+</html>
